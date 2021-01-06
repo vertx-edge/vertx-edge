@@ -25,7 +25,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class DeployerVerticle extends AbstractVerticle {
 
-  private static final String VERTICLE_HTTP_CLIENT = "com.vertx.commons.http.client.verticle.HttpClientVerticle";
+  private static final String VERTICLE_HTTP_CLIENT = "com.vertx.commons.http.client.verticle.WebClientVerticle";
   private Deployer deployer;
 
   @Override
@@ -44,7 +44,7 @@ public final class DeployerVerticle extends AbstractVerticle {
       JsonObject services = config.getJsonObject("services");
       JsonArray phases = config.getJsonArray("phases");
       JsonObject webServer = config.getJsonObject("web-server");
-      JsonObject webClients = config.getJsonObject("web-clients");
+      JsonObject webClients = config.getJsonObject("web-client");
 
       this.deployServices(services, registryPackages).onSuccess(v -> {
         CompositeFuture.all(deployRestService(webServer), deployRestClient(webClients)).onSuccess(c -> {
@@ -81,12 +81,16 @@ public final class DeployerVerticle extends AbstractVerticle {
 
   private Future<Void> deployRestClient(JsonObject config) {
     if (config == null || config.isEmpty()) {
-      log.info("The configuration \"web-clients\" was not found, no one WebClient will be discovered.");
+      log.info("The configuration \"web-client\" was not found, no one WebClient will be discovered.");
       return Future.succeededFuture();
     }
+    
+    JsonObject options = config.getJsonObject("options", new JsonObject());
+    JsonObject clients = config.getJsonObject("clients");
 
     try {
-      return this.deployer.deploy(Class.forName(VERTICLE_HTTP_CLIENT).getName(), config);
+      return this.deployer.deploy(Class.forName(VERTICLE_HTTP_CLIENT).getName(),
+          options.put("config", clients));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebClient field was found, but the package is missing. "
           + "Import the library -> groupId: com.vertx.commons | artifactId: http-client");
@@ -110,10 +114,7 @@ public final class DeployerVerticle extends AbstractVerticle {
 
   private void deployPhase(Iterator<Phase> it, Handler<AsyncResult<Void>> handler) {
     if (it.hasNext()) {
-      it.next().deploy(vertx).onSuccess(v -> {
-        log.info("phase ended.");
-        deployPhase(it, handler);
-      }).onFailure(cause -> handler.handle(Future.failedFuture(cause)));
+      it.next().deploy(vertx).onSuccess(v -> deployPhase(it, handler)).onFailure(cause -> handler.handle(Future.failedFuture(cause)));
     } else {
       handler.handle(Future.succeededFuture());
     }
