@@ -22,7 +22,7 @@ public class Phase {
   }
 
   public Future<Void> deploy(Vertx vertx) {
-    CompositeFutureBuilder builder = CompositeFutureBuilder.list();
+    CompositeFutureBuilder builder = CompositeFutureBuilder.create();
     Deployer deployer = new Deployer(vertx);
 
     list.forEach((name, opts) -> {

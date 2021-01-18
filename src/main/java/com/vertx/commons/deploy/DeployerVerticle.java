@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 
 import com.vertx.commons.deploy.config.VerticleConfiguration;
 import com.vertx.commons.deploy.service.ServiceDiscoveryVerticle;
+import com.vertx.commons.utils.CompositeFutureBuilder;
 import com.vertx.commons.utils.Timer;
-import com.vertx.commons.verticle.RestServerVerticle;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -25,14 +25,16 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class DeployerVerticle extends AbstractVerticle {
 
-  private static final String VERTICLE_HTTP_CLIENT = "com.vertx.commons.http.client.verticle.WebClientVerticle";
+  private static final String VERTICLE_WEB_CLIENT = "com.vertx.commons.http.client.verticle.WebClientVerticle";
+  private static final String VERTICLE_WEB_SERVER = "com.vertx.commons.http.server.verticle.WebServerVerticle";
   private Deployer deployer;
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
+    Timer timer = Timer.start();
     String threadName = Thread.currentThread().getName();
     Thread.currentThread().setName("deploying");
-    Timer timer = Timer.start();
+
     StartInfo.print();
 
     VerticleConfiguration.create(vertx).load().onFailure(startPromise::fail).onSuccess(config -> {
@@ -41,23 +43,35 @@ public final class DeployerVerticle extends AbstractVerticle {
 
       this.deployer = new Deployer(vertx);
 
-      JsonObject services = config.getJsonObject("services");
-      JsonArray phases = config.getJsonArray("phases");
-      JsonObject webServer = config.getJsonObject("web-server");
-      JsonObject webClients = config.getJsonObject("web-client");
-
-      this.deployServices(services, registryPackages).onSuccess(v -> {
-        CompositeFuture.all(deployRestService(webServer), deployRestClient(webClients)).onSuccess(c -> {
-          this.deployPhases(phases).onSuccess(p -> {
-            log.info("All Verticles are deployed successful");
-            log.info("Elapsed time to deploy: {}", timer);
-            log.info("Application started!");
-            Thread.currentThread().setName(threadName);
-          }).onFailure(startPromise::fail);
-        }).onFailure(startPromise::fail);
+      startDepoy(timer, config, registryPackages).onSuccess(p -> {
+        log.info("All Verticles are deployed successful");
+        log.info("Elapsed time to deploy: {}", timer);
+        log.info("Application started!");
+        Thread.currentThread().setName(threadName);
       }).onFailure(startPromise::fail);
-
     });
+  }
+
+  private Future<CompositeFuture> startDepoy(Timer timer, JsonObject config, String registryPackages) {
+    Promise<CompositeFuture> promise = Promise.promise();
+
+    JsonObject services = config.getJsonObject("services");
+    JsonArray phases = config.getJsonArray("phases");
+    JsonObject webServer = config.getJsonObject("web-server");
+    JsonObject webClients = config.getJsonObject("web-client");
+    
+    CompositeFutureBuilder.create()
+      .add(this.deployServices(services, registryPackages))
+      .add(this.deployWebClient(webClients))
+        .all()
+        .compose(v -> CompositeFutureBuilder.create()
+              .add(this.deployWebServer(webServer))
+              .add(this.deployPhases(phases))
+              .all()
+                .onSuccess(cr -> promise.complete())
+                .onFailure(promise::fail));
+    
+    return promise.future();
   }
 
   private Future<Void> deployServices(JsonObject config, String registryPackages) {
@@ -70,30 +84,37 @@ public final class DeployerVerticle extends AbstractVerticle {
     return this.deployer.deploy(ServiceDiscoveryVerticle.class.getName(), options);
   }
 
-  private Future<Void> deployRestService(JsonObject config) {
+  private Future<Void> deployWebServer(JsonObject config) {
     if (config == null || config.isEmpty()) {
       log.info("The configuration \"web-server\" was not found, no one @Controller will inject.");
       return Future.succeededFuture();
     }
+    
+    JsonObject options = config.getJsonObject("deployOptions", new JsonObject());
+    config.remove("deployOptions");
 
-    return this.deployer.deploy(config.getString("core", RestServerVerticle.class.getName()), config);
+    try {
+      return this.deployer.deploy(Class.forName(VERTICLE_WEB_SERVER).getName(), options.put("config", config));
+    } catch (ClassNotFoundException e) {
+      return Future.failedFuture("In the configuration file the WebServer field was found, but the package is missing. "
+          + "Import the library -> groupId: com.vertx.commons | artifactId: web-server");
+    }
   }
 
-  private Future<Void> deployRestClient(JsonObject config) {
+  private Future<Void> deployWebClient(JsonObject config) {
     if (config == null || config.isEmpty()) {
       log.info("The configuration \"web-client\" was not found, no one WebClient will be discovered.");
       return Future.succeededFuture();
     }
-    
-    JsonObject options = config.getJsonObject("options", new JsonObject());
-    JsonObject clients = config.getJsonObject("clients");
+
+    JsonObject options = config.getJsonObject("deployOptions", new JsonObject());
+    config.remove("deployOptions");
 
     try {
-      return this.deployer.deploy(Class.forName(VERTICLE_HTTP_CLIENT).getName(),
-          options.put("config", clients));
+      return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(), options.put("config", config));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebClient field was found, but the package is missing. "
-          + "Import the library -> groupId: com.vertx.commons | artifactId: http-client");
+          + "Import the library -> groupId: com.vertx.commons | artifactId: web-client");
     }
   }
 
@@ -114,7 +135,8 @@ public final class DeployerVerticle extends AbstractVerticle {
 
   private void deployPhase(Iterator<Phase> it, Handler<AsyncResult<Void>> handler) {
     if (it.hasNext()) {
-      it.next().deploy(vertx).onSuccess(v -> deployPhase(it, handler)).onFailure(cause -> handler.handle(Future.failedFuture(cause)));
+      it.next().deploy(vertx).onSuccess(v -> deployPhase(it, handler))
+          .onFailure(cause -> handler.handle(Future.failedFuture(cause)));
     } else {
       handler.handle(Future.succeededFuture());
     }

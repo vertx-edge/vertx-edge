@@ -30,7 +30,7 @@ public class ServiceDiscoveryVerticle extends BaseVerticle {
   }
 
   private Future<Void> registerServices() {
-    CompositeFutureBuilder composite = CompositeFutureBuilder.list();
+    CompositeFutureBuilder composite = CompositeFutureBuilder.create();
     for (String key : config().fieldNames()) {
       composite
           .add(registerService(vertx, config().getJsonObject(key.toLowerCase(Locale.ENGLISH), new JsonObject()), key)

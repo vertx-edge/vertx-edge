@@ -115,7 +115,7 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
     if (components.isEmpty())
       return Future.succeededFuture();
 
-    CompositeFutureBuilder composite = CompositeFutureBuilder.list();
+    CompositeFutureBuilder composite = CompositeFutureBuilder.create();
     for (ComponentRegister invokeModel : components)
       composite.add(invokeComponent(invokeModel.getName(), invokeModel.getMethod()));
 
