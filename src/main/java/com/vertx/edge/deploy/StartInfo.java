@@ -49,8 +49,8 @@ public final class StartInfo {
       else
         log.info("Starting application...");
       log.info("Created by " + ManifestUtil.read("Created-By") + " on " + ManifestUtil.read("project-datetime"));
-      log.info("Vert.x Core " + ManifestUtil.read("vertx-version"));
-      log.info("Vert.x Commons " + ManifestUtil.read("vertx-commons-version"));
+      log.info("Vert.x " + ManifestUtil.read("vertx-version"));
+      log.info("Vert.x Edge " + ManifestUtil.read("vertx-edge-version"));
     }
     Thread.currentThread().setName(threadName);
   }

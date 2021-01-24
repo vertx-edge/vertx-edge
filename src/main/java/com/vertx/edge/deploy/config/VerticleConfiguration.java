@@ -24,7 +24,7 @@ public interface VerticleConfiguration {
 
   String ENV_CONFIG_PARAM = "DEPLOY_CONFIG";
   String CONFIG_NAME = "deploy-strategy.yaml";
-  String BASE_PACKAGE_COMMONS = "com.vertx.commons";
+  String BASE_PACKAGE_EDGE = "com.vertx.edge";
 
   static VerticleConfiguration create(Vertx vertx) {
     return new VerticleConfigurationImpl(vertx);

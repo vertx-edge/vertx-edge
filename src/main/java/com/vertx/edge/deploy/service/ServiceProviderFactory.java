@@ -35,7 +35,7 @@ public class ServiceProviderFactory {
   private Set<Class<?>> list = new HashSet<>();
 
   public ServiceProviderFactory(String basePackage) {
-    Reflections reflections = new Reflections(VerticleConfiguration.BASE_PACKAGE_COMMONS, basePackage);
+    Reflections reflections = new Reflections(VerticleConfiguration.BASE_PACKAGE_EDGE, basePackage);
     Set<Class<?>> annotations = reflections.getTypesAnnotatedWith(ServiceProvider.class);
 
     for (Class<?> clazz : annotations)

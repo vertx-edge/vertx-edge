@@ -102,7 +102,7 @@ public final class DeployerVerticle extends AbstractVerticle {
           options.put("config", config.put("base-package", registryPackages)));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebServer field was found, but the package is missing. "
-          + "Import the library -> groupId: com.vertx.commons | artifactId: web-server");
+          + "Import the library -> groupId: com.vertx.edge | artifactId: web-server");
     }
   }
 
@@ -119,7 +119,7 @@ public final class DeployerVerticle extends AbstractVerticle {
       return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(), options.put("config", config));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebClient field was found, but the package is missing. "
-          + "Import the library -> groupId: com.vertx.commons | artifactId: web-client");
+          + "Import the library -> groupId: com.vertx.edge | artifactId: web-client");
     }
   }
 

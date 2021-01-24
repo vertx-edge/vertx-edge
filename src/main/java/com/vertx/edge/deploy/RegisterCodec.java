@@ -36,7 +36,7 @@ public final class RegisterCodec {
   public static void registerAll(Vertx vertx, String registryPackages) {
     Objects.requireNonNull(registryPackages, "Missing configuration of 'RegistryPackages'");
 
-    Reflections reflections = new Reflections(VerticleConfiguration.BASE_PACKAGE_COMMONS, registryPackages);
+    Reflections reflections = new Reflections(VerticleConfiguration.BASE_PACKAGE_EDGE, registryPackages);
     Set<Class<?>> annotations = reflections.getTypesAnnotatedWith(EventBusCodec.class);
 
     for (Class<?> clazz : annotations) {
