@@ -21,12 +21,9 @@ public class ServiceDiscoveryVerticle extends BaseVerticle {
   private ServiceProviderFactory serviceFactory;
 
   @Override
-  protected Promise<Void> up() {
+  protected void up(Promise<Void> promise) {
     this.serviceFactory = new ServiceProviderFactory(config().getString("base-package"));
-
-    Promise<Void> promise = Promise.promise();
     this.registerServices().onComplete(promise);
-    return promise;
   }
 
   private Future<Void> registerServices() {

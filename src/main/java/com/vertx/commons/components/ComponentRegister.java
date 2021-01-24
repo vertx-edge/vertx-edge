@@ -5,24 +5,24 @@ package com.vertx.commons.components;
  */
 public enum ComponentRegister {
 
-	TCP_SERVER(TCPServer.class, "startTcpServer"),
-	TCP_CLIENT(TCPClient.class, "startTcpClient"),
-	LIVENESS(LivenessCheckable.class, "startLivenessCheck"),
-	READINESS(ReadinessCheckable.class, "startReadinessCheck");
+  TCP_SERVER(TCPServer.class, "startTcpServer"),
+  TCP_CLIENT(TCPClient.class, "startTcpClient"),
+  LIVENESS(LivenessCheckable.class, "startLivenessCheck"), 
+  READINESS(ReadinessCheckable.class, "startReadinessCheck");
 
-	private String name;
-	private String method;
+  private String name;
+  private String method;
 
-	ComponentRegister(Class<?> name, String method) {
-		this.name = name.getName();
-		this.method = method;
-	}
+  ComponentRegister(Class<?> name, String method) {
+    this.name = name.getName();
+    this.method = method;
+  }
 
-	public String getName() {
-		return name;
-	}
+  public String getName() {
+    return name;
+  }
 
-	public String getMethod() {
-		return method;
-	}
+  public String getMethod() {
+    return method;
+  }
 }

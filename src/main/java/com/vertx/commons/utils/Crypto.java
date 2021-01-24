@@ -19,8 +19,7 @@ public class Crypto {
   private SecretKeySpec secretKey;
   private Cipher cipher;
 
-  public Crypto(String secret, int length, String algorithm)
-      throws NoSuchAlgorithmException, NoSuchPaddingException {
+  public Crypto(String secret, int length, String algorithm) throws NoSuchAlgorithmException, NoSuchPaddingException {
     byte[] key = new byte[length];
     key = fixSecret(secret, length);
     this.secretKey = new SecretKeySpec(key, algorithm);

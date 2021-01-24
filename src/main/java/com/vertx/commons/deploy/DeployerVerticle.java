@@ -25,8 +25,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class DeployerVerticle extends AbstractVerticle {
 
-  private static final String VERTICLE_WEB_CLIENT = "com.vertx.commons.http.client.verticle.WebClientVerticle";
-  private static final String VERTICLE_WEB_SERVER = "com.vertx.commons.http.server.verticle.WebServerVerticle";
+  private static final String VERTICLE_WEB_CLIENT = "com.vertx.commons.web.client.verticle.WebClientVerticle";
+  private static final String VERTICLE_WEB_SERVER = "com.vertx.commons.web.server.verticle.WebServerVerticle";
   private Deployer deployer;
 
   @Override
@@ -59,23 +59,17 @@ public final class DeployerVerticle extends AbstractVerticle {
     JsonArray phases = config.getJsonArray("phases");
     JsonObject webServer = config.getJsonObject("web-server");
     JsonObject webClients = config.getJsonObject("web-client");
-    
-    CompositeFutureBuilder.create()
-      .add(this.deployServices(services, registryPackages))
-      .add(this.deployWebClient(webClients))
-        .all()
-        .compose(v -> CompositeFutureBuilder.create()
-              .add(this.deployWebServer(webServer))
-              .add(this.deployPhases(phases))
-              .all()
-                .onSuccess(cr -> promise.complete())
-                .onFailure(promise::fail));
-    
+
+    CompositeFutureBuilder.create().add(this.deployServices(services, registryPackages))
+        .add(this.deployWebClient(webClients)).all()
+        .compose(v -> CompositeFutureBuilder.create().add(this.deployWebServer(webServer, registryPackages))
+            .add(this.deployPhases(phases)).all().onSuccess(cr -> promise.complete()).onFailure(promise::fail));
+
     return promise.future();
   }
 
   private Future<Void> deployServices(JsonObject config, String registryPackages) {
-    if (config == null || config.isEmpty()) {
+    if (config == null) {
       log.info("The configuration \"services\" was not found, no one service will be discovered.");
       return Future.succeededFuture();
     }
@@ -84,17 +78,18 @@ public final class DeployerVerticle extends AbstractVerticle {
     return this.deployer.deploy(ServiceDiscoveryVerticle.class.getName(), options);
   }
 
-  private Future<Void> deployWebServer(JsonObject config) {
-    if (config == null || config.isEmpty()) {
+  private Future<Void> deployWebServer(JsonObject config, String registryPackages) {
+    if (config == null) {
       log.info("The configuration \"web-server\" was not found, no one @Controller will inject.");
       return Future.succeededFuture();
     }
-    
+
     JsonObject options = config.getJsonObject("deployOptions", new JsonObject());
     config.remove("deployOptions");
 
     try {
-      return this.deployer.deploy(Class.forName(VERTICLE_WEB_SERVER).getName(), options.put("config", config));
+      return this.deployer.deploy(Class.forName(VERTICLE_WEB_SERVER).getName(),
+          options.put("config", config.put("base-package", registryPackages)));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebServer field was found, but the package is missing. "
           + "Import the library -> groupId: com.vertx.commons | artifactId: web-server");
@@ -102,7 +97,7 @@ public final class DeployerVerticle extends AbstractVerticle {
   }
 
   private Future<Void> deployWebClient(JsonObject config) {
-    if (config == null || config.isEmpty()) {
+    if (config == null) {
       log.info("The configuration \"web-client\" was not found, no one WebClient will be discovered.");
       return Future.succeededFuture();
     }

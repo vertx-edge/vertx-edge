@@ -30,24 +30,24 @@ public class CompositeFutureBuilder {
   public Future<Void> all() {
     Promise<Void> promise = Promise.promise();
     CompositeFuture.all(new ArrayList<>(futures))
-        .onSuccess(v -> promise.complete())
-        .onFailure(promise::fail);
+      .onSuccess(v -> promise.complete())
+      .onFailure(promise::fail);
     return promise.future();
   }
-  
+
   public Future<Void> any() {
     Promise<Void> promise = Promise.promise();
     CompositeFuture.any(new ArrayList<>(futures))
-        .onSuccess(v -> promise.complete())
-        .onFailure(promise::fail);
+      .onSuccess(v -> promise.complete())
+      .onFailure(promise::fail);
     return promise.future();
   }
-  
+
   public Future<Void> join() {
     Promise<Void> promise = Promise.promise();
     CompositeFuture.join(new ArrayList<>(futures))
-        .onSuccess(v -> promise.complete())
-        .onFailure(promise::fail);
+      .onSuccess(v -> promise.complete())
+      .onFailure(promise::fail);
     return promise.future();
   }
 }

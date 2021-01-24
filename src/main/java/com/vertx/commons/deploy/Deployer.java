@@ -69,7 +69,7 @@ public class Deployer {
       log.info("Success to Deploy Verticle: ".concat(printName(name)));
       promise.complete();
     }).onFailure(cause -> {
-      log.error("Failed to Deploy Verticle "+printName(name)+", reason: "+cause.getMessage());
+      log.error("Failed to Deploy Verticle " + printName(name) + ", reason: " + cause.getMessage(), cause);
       promise.fail(String.format("Failed to deploy: %s -> Cause: %s", name, cause.getMessage()));
     });
 

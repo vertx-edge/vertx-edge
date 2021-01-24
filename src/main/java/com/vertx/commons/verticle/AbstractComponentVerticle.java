@@ -14,12 +14,10 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import lombok.extern.log4j.Log4j2;
 
 /**
  * @author Luiz Schmidt
  */
-@Log4j2
 public abstract class AbstractComponentVerticle extends AbstractVerticle {
 
   private static final long TIMEOUT_VERTICLE_UP = 30000L;
@@ -122,8 +120,8 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
     Promise<Void> promise = Promise.promise();
     composite.all().onComplete(promise);
 
-    vertx.setTimer(config().getLong("timeout", TIMEOUT_VERTICLE_UP), res -> promise
-        .tryFail("Timeout on executing models, be sure to complete() all futures/promise verticles"));
+    vertx.setTimer(config().getLong("timeout", TIMEOUT_VERTICLE_UP),
+        res -> promise.tryFail("Timeout on executing models, be sure to complete() all futures/promise verticles"));
 
     return promise.future();
   }
@@ -136,7 +134,6 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
 
       return (Future<Void>) obj;
     } catch (ReflectiveOperationException e) {
-      log.error("Error on executing component: " + name + ", method: " + methodName + ", reason: ", e);
       return Future.failedFuture(e);
     }
   }

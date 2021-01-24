@@ -12,29 +12,29 @@ import io.vertx.ext.healthchecks.Status;
 @EventBusCodec
 public class StatusHealthCodec implements MessageCodec<Status, Status> {
 
-	@Override
-	public void encodeToWire(Buffer buffer, Status s) {
-		//Nothing to do
-	}
+  @Override
+  public void encodeToWire(Buffer buffer, Status s) {
+    // Nothing to do
+  }
 
-	@Override
-	public Status decodeFromWire(int pos, Buffer buffer) {
-		return null;
-	}
+  @Override
+  public Status decodeFromWire(int pos, Buffer buffer) {
+    return null;
+  }
 
-	@Override
-	public Status transform(Status s) {
-		return s;
-	}
+  @Override
+  public Status transform(Status s) {
+    return s;
+  }
 
-	@Override
-	public String name() {
-		return StatusHealthCodec.class.getName();
-	}
+  @Override
+  public String name() {
+    return StatusHealthCodec.class.getName();
+  }
 
-	@Override
-	public byte systemCodecID() {
-		return -1;
-	}
+  @Override
+  public byte systemCodecID() {
+    return -1;
+  }
 
 }

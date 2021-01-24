@@ -9,9 +9,9 @@ import io.vertx.core.json.JsonObject;
 public final class BasicAuthStrategy {
 
   private BasicAuthStrategy() {
-    //Nothing to do
+    // Nothing to do
   }
-  
+
   public static Future<JsonObject> resolveSecret(JsonObject config) {
     JsonObject basicAuth = config.getJsonObject("basic-auth");
 

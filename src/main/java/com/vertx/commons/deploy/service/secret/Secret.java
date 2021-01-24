@@ -16,6 +16,7 @@ public final class Secret {
 
   /**
    * Return an JsonObject with username and password
+   * 
    * @param vertx
    * @param config
    * @return
@@ -29,9 +30,8 @@ public final class Secret {
     }
 
     Promise<JsonObject> promise = Promise.promise();
-    type.getUserAndPassword(vertx, config)
-      .onSuccess(secret -> promise.complete(buildJsonAuthFile(secret)))
-      .onFailure(promise::fail);
+    type.getUserAndPassword(vertx, config).onSuccess(secret -> promise.complete(buildJsonAuthFile(secret)))
+        .onFailure(promise::fail);
     return promise.future();
   }
 

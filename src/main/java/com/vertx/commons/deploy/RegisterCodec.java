@@ -31,9 +31,7 @@ public final class RegisterCodec {
     for (Class<?> clazz : annotations) {
       if (MessageCodec.class.isAssignableFrom(clazz)) {
         try {
-          MessageCodec<?, ?> codec = (MessageCodec<?, ?>) Class.forName(clazz.getName()).getDeclaredConstructor()
-              .newInstance();
-          vertx.eventBus().registerCodec(codec);
+          vertx.eventBus().registerCodec((MessageCodec<?, ?>) clazz.getDeclaredConstructor().newInstance());
         } catch (ReflectiveOperationException e) {
           log.warn("The codec {} cannot be registered, please verify: ", e);
         }

@@ -32,7 +32,7 @@ public interface TCPServer {
       return Future.failedFuture("The port must be informed.");
 
     Promise<NetServer> promise = Promise.promise();
-    
+
     NetServerOptions options = new NetServerOptions();
     JsonObject netOptions = config.getJsonObject("options");
     if (netOptions != null)
