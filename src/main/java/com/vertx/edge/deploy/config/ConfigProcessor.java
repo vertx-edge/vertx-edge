@@ -24,6 +24,13 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class ConfigProcessor implements UnaryOperator<JsonObject> {
 
+  private static final int FULL_GROUP = 1;
+  private static final int OPTIONAL_GROUP = 2;
+  private static final int TYPE_GROUP = 3;
+  private static final int NAME_GROUP = 4;
+  private static final int DEFAULT_GROUP = 6;
+
+  private static final Pattern OPTIONAL = Pattern.compile("\\?");
   private static final Pattern pattern = Pattern
       .compile("(\\\"(!?)(env|intEnv|bolEnv|rawEnv):([a-zA-Z-_0-9]+)(\\?([\\w\\W]([^\\\"]){0,}))?\\\")");
 
@@ -34,11 +41,11 @@ public final class ConfigProcessor implements UnaryOperator<JsonObject> {
 
     boolean error = false;
     while (m.find()) {
-      String fullExpr = m.group(1).replaceFirst("\\?", "\\\\?");
-      boolean optional = "!".equalsIgnoreCase(m.group(2));
-      String type = m.group(3);
-      String nameVariable = m.group(4);
-      String defaultValue = m.group(6);
+      String fullExpr = OPTIONAL.matcher(m.group(FULL_GROUP)).replaceFirst("\\\\?");
+      boolean optional = "!".equalsIgnoreCase(m.group(OPTIONAL_GROUP));
+      String type = m.group(TYPE_GROUP);
+      String nameVariable = m.group(NAME_GROUP);
+      String defaultValue = m.group(DEFAULT_GROUP);
 
       try {
         String value = getValue(nameVariable, defaultValue, optional);

@@ -11,9 +11,13 @@
  */
 package com.vertx.edge.components;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
 /**
  * @author Luiz Schmidt
  */
+@Accessors(fluent = true)
 public enum ComponentRegister {
 
   TCP_SERVER(TCPServer.class, "startTcpServer"), 
@@ -21,19 +25,26 @@ public enum ComponentRegister {
   LIVENESS(LivenessCheckable.class, "startLivenessCheck"), 
   READINESS(ReadinessCheckable.class, "startReadinessCheck");
 
-  private String name;
+  @Getter
+  private Class<?> clazz;
+  @Getter
   private String method;
 
   ComponentRegister(Class<?> name, String method) {
-    this.name = name.getName();
+    this.clazz = name;
     this.method = method;
   }
 
-  public String getName() {
-    return name;
-  }
-
-  public String getMethod() {
-    return method;
+  /**
+   * @param type
+   * @return
+   */
+  public static ComponentRegister getByClass(Class<?> clazz) {
+    for (ComponentRegister cr : ComponentRegister.values()) {
+      if(cr.clazz().equals(clazz)) {
+        return cr;
+      }
+    }
+    return null;
   }
 }

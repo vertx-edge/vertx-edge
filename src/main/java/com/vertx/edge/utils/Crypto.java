@@ -56,8 +56,8 @@ public class Crypto {
       return new String(cryptedBytes, StandardCharsets.UTF_8);
     } catch (GeneralSecurityException e) {
       log.error("Cannot decrypt value: ", e);
+      return null;
     }
-    return null;
   }
 
   public String encrypt(String string) {
@@ -67,8 +67,7 @@ public class Crypto {
       return Base64.getEncoder().encodeToString(cryptedBytes);
     } catch (GeneralSecurityException e) {
       log.error("Cannot encrypt value: ", e);
+      return null;
     }
-    return null;
   }
-
 }

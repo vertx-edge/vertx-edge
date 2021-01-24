@@ -13,8 +13,6 @@ package com.vertx.edge.deploy.config;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.io.FilenameUtils;
-
 import io.vertx.config.ConfigChange;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Future;
@@ -38,7 +36,7 @@ public class VerticleConfigurationImpl implements VerticleConfiguration {
 
   private Vertx vertx;
   private String fileName;
-  
+
   private AtomicLong version = new AtomicLong();
 
   public VerticleConfigurationImpl(Vertx vertx) {
@@ -50,18 +48,16 @@ public class VerticleConfigurationImpl implements VerticleConfiguration {
   public Future<JsonObject> load() {
     Promise<JsonObject> promise = Promise.promise();
     vertx.fileSystem().exists(this.fileName)
-        .onFailure(cause -> promise.fail(MESSAGE_FILE_NOT_FOUND))
-        .onSuccess(exists -> {
+      .onFailure(cause -> promise.fail(MESSAGE_FILE_NOT_FOUND))
+      .onSuccess(exists -> {
           ConfigStoreOptions store = new ConfigStoreOptions().setType("file")
-              .setFormat(FilenameUtils.getExtension(CONFIG_NAME))
-              .setConfig(new JsonObject().put("path", fileName));
+              .setFormat("yaml").setConfig(new JsonObject().put("path", fileName));
 
-          ConfigurationLoader.create(vertx, store)
-            .setProcessor(new ConfigProcessor()).onChange(this::onChange)
-            .load().onSuccess(config -> {
-              version.getAndIncrement();
-              promise.complete(config);
-            }).onFailure(promise::fail);
+          ConfigurationLoader.create(vertx, store).setProcessor(new ConfigProcessor()).onChange(this::onChange).load()
+              .onSuccess(config -> {
+                version.getAndIncrement();
+                promise.complete(config);
+              }).onFailure(promise::fail);
         });
     return promise.future();
   }

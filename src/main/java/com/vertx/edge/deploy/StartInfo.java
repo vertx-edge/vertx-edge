@@ -11,10 +11,6 @@
  */
 package com.vertx.edge.deploy;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
 import com.vertx.edge.utils.ManifestUtil;
 
 import lombok.extern.log4j.Log4j2;
@@ -25,18 +21,15 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class StartInfo {
 
-  private static final String DIR_BANNER = "banner.txt";
-
   private StartInfo() {
     // Nothing to do
   }
 
-  public static void print() {
+  public static void print(String banner) {
     String threadName = Thread.currentThread().getName();
     Thread.currentThread().setName("initializing");
-    String banner = getBannerFile();
     if (banner != null) {
-      System.out.println(banner);
+      log.info("\n{}\n", banner);
     }
 
     if (ManifestUtil.isLoaded()) {
@@ -53,13 +46,5 @@ public final class StartInfo {
       log.info("Vert.x Edge " + ManifestUtil.read("vertx-edge-version"));
     }
     Thread.currentThread().setName(threadName);
-  }
-
-  private static String getBannerFile() {
-    try {
-      return Files.readString(Paths.get(DIR_BANNER));
-    } catch (IOException e) {
-      return null;
-    }
   }
 }

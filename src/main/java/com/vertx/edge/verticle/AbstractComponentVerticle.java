@@ -11,9 +11,9 @@
  */
 package com.vertx.edge.verticle;
 
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.vertx.edge.components.ComponentRegister;
@@ -104,11 +104,12 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
   private static List<ComponentRegister> setAnnotations(Class<?> clazz) {
     List<ComponentRegister> annotations = new ArrayList<>();
     if (clazz.getAnnotatedInterfaces() != null) {
-      for (AnnotatedType type : clazz.getAnnotatedInterfaces()) {
-        for (ComponentRegister model : ComponentRegister.values())
-          if (type.getType().getTypeName().equals(model.getName()))
-            annotations.add(model);
-      }
+      Arrays.stream(clazz.getAnnotatedInterfaces()).forEach(type -> {
+        ComponentRegister component = ComponentRegister.getByClass((Class<?>) type.getType());
+        if(component != null) {
+          annotations.add(component);
+        }
+      });
     }
     return annotations;
   }
@@ -126,7 +127,7 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
 
     CompositeFutureBuilder composite = CompositeFutureBuilder.create();
     for (ComponentRegister invokeModel : components)
-      composite.add(invokeComponent(invokeModel.getName(), invokeModel.getMethod()));
+      composite.add(invokeComponent(invokeModel.clazz(), invokeModel.method()));
 
     Promise<Void> promise = Promise.promise();
     composite.all().onComplete(promise);
@@ -138,9 +139,9 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
   }
 
   @SuppressWarnings("unchecked")
-  private Future<Void> invokeComponent(String name, String methodName) {
+  private Future<Void> invokeComponent(Class<?> name, String methodName) {
     try {
-      Method method = Class.forName(name).getMethod(methodName, Vertx.class, JsonObject.class);
+      Method method = name.getMethod(methodName, Vertx.class, JsonObject.class);
       Object obj = method.invoke(this, vertx, config());
 
       return (Future<Void>) obj;

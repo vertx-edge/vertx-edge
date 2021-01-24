@@ -17,18 +17,17 @@ import java.nio.charset.StandardCharsets;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Luiz Schmidt
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class FileUtils {
 
-  private FileUtils(){
-    //Nothing to do
-  }
-  
   /**
-   * Load first line from file
+   * Load lines of small files
    * 
    * @param vertx
    * @param path
@@ -41,9 +40,8 @@ public final class FileUtils {
     Promise<String> promise = Promise.promise();
     vertx.fileSystem().exists(path).onSuccess(exists -> {
       if (exists.booleanValue()) {
-        vertx.fileSystem().readFile(path)
-          .onSuccess(file -> promise.complete(file.toString(StandardCharsets.UTF_8)))
-          .onFailure(cause -> new FileNotFoundException("Error on reading file, cause: " + cause));
+        vertx.fileSystem().readFile(path).onSuccess(file -> promise.complete(file.toString(StandardCharsets.UTF_8)))
+            .onFailure(promise::fail);
       } else {
         promise.fail(new FileNotFoundException("File " + path + " not exists in directory."));
       }

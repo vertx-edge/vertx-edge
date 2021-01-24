@@ -33,6 +33,11 @@ public class CompositeFutureBuilder {
     return new CompositeFutureBuilder();
   }
 
+  public <T> CompositeFutureBuilder add(Promise<T> promise) {
+    futures.add(promise.future());
+    return this;
+  }
+  
   public <T> CompositeFutureBuilder add(Future<T> future) {
     futures.add(future);
     return this;

@@ -11,9 +11,13 @@
  */
 package com.vertx.edge.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * @author Luiz Schmidt
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Timer {
 
   private static final long HOURS = 3_600_000_000_000L;
@@ -24,10 +28,6 @@ public final class Timer {
   private long start;
   private long end;
 
-  private Timer() {
-    super();
-  }
-
   public static Timer start() {
     Timer timer = new Timer();
     timer.start = System.nanoTime();
@@ -35,12 +35,7 @@ public final class Timer {
   }
 
   public Timer end() {
-    return end(false);
-  }
-
-  public Timer end(boolean force) {
-    if (force || this.end == 0)
-      this.end = System.nanoTime();
+    this.end = System.nanoTime();
     return this;
   }
 
@@ -50,26 +45,27 @@ public final class Timer {
     return this;
   }
 
-  public long getTime(boolean force) {
-    end(force);
-    return end - start;
-  }
-
-  public long getTimeNano() {
-    end();
-    return end - start;
+  public long getTime() {
+    if(end == 0) {
+      return System.nanoTime() - start;
+    }else {
+      return end - start;
+    }
   }
 
   public long getTimeMillis() {
-    return getTimeNano() / MILISECONDS;
+    return getTime() / MILISECONDS;
   }
 
   public static String toTimeFromMillis(long timeInMilli) {
     return toTime(timeInMilli * MILISECONDS);
   }
+  
+  private String result() {
+    return Timer.toTime(this.getTime());
+  }
 
-  public static String toTime(long timeInNanoSeconds) {
-    long result = timeInNanoSeconds;
+  public static String toTime(long result) {
     StringBuilder message = new StringBuilder();
 
     if (result >= HOURS) {
@@ -96,10 +92,6 @@ public final class Timer {
       message.append(result).append(" ns");
     }
     return message.toString();
-  }
-
-  private String result() {
-    return Timer.toTime(getTime(true));
   }
 
   @Override

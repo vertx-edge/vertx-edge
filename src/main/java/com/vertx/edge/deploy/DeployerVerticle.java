@@ -36,6 +36,9 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class DeployerVerticle extends AbstractVerticle {
 
+  private static final String DIR_BANNER = "banner.txt";
+  private static final String CONFIG = "config";
+  private static final String DEPLOY_OPTIONS = "deployOptions";
   private static final String VERTICLE_WEB_CLIENT = "com.vertx.edge.web.client.verticle.WebClientVerticle";
   private static final String VERTICLE_WEB_SERVER = "com.vertx.edge.web.server.verticle.WebServerVerticle";
   private Deployer deployer;
@@ -46,7 +49,7 @@ public final class DeployerVerticle extends AbstractVerticle {
     String threadName = Thread.currentThread().getName();
     Thread.currentThread().setName("deploying");
 
-    StartInfo.print();
+    StartInfo.print(this.bannerFile());
 
     this.deployer = new Deployer(vertx);
     VerticleConfiguration.create(vertx).load().onFailure(startPromise::fail).onSuccess(config -> {
@@ -60,6 +63,12 @@ public final class DeployerVerticle extends AbstractVerticle {
         Thread.currentThread().setName(threadName);
       }).onFailure(startPromise::fail);
     });
+  }
+
+  private String bannerFile() {
+    if (vertx.fileSystem().existsBlocking(DIR_BANNER))
+      return vertx.fileSystem().readFileBlocking(DIR_BANNER).toString();
+    return null;
   }
 
   private Future<CompositeFuture> startDepoy(Timer timer, JsonObject config, String registryPackages) {
@@ -84,7 +93,7 @@ public final class DeployerVerticle extends AbstractVerticle {
       return Future.succeededFuture();
     }
 
-    JsonObject options = new JsonObject().put("config", config).put("base-package", registryPackages);
+    JsonObject options = new JsonObject().put(CONFIG, config).put("base-package", registryPackages);
     return this.deployer.deploy(ServiceDiscoveryVerticle.class.getName(), options);
   }
 
@@ -94,12 +103,12 @@ public final class DeployerVerticle extends AbstractVerticle {
       return Future.succeededFuture();
     }
 
-    JsonObject options = config.getJsonObject("deployOptions", new JsonObject());
-    config.remove("deployOptions");
+    JsonObject options = config.getJsonObject(DEPLOY_OPTIONS, new JsonObject());
+    config.remove(DEPLOY_OPTIONS);
 
     try {
       return this.deployer.deploy(Class.forName(VERTICLE_WEB_SERVER).getName(),
-          options.put("config", config.put("base-package", registryPackages)));
+          options.put(CONFIG, config.put("base-package", registryPackages)));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebServer field was found, but the package is missing. "
           + "Import the library -> groupId: com.vertx.edge | artifactId: web-server");
@@ -112,11 +121,11 @@ public final class DeployerVerticle extends AbstractVerticle {
       return Future.succeededFuture();
     }
 
-    JsonObject options = config.getJsonObject("deployOptions", new JsonObject());
-    config.remove("deployOptions");
+    JsonObject options = config.getJsonObject(DEPLOY_OPTIONS, new JsonObject());
+    config.remove(DEPLOY_OPTIONS);
 
     try {
-      return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(), options.put("config", config));
+      return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(), options.put(CONFIG, config));
     } catch (ClassNotFoundException e) {
       return Future.failedFuture("In the configuration file the WebClient field was found, but the package is missing. "
           + "Import the library -> groupId: com.vertx.edge | artifactId: web-client");

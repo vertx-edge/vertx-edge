@@ -25,12 +25,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.jar.Manifest;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 /**
  * @author Luiz Schmidt
  */
 @Log4j2
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ManifestUtil {
 
   private static final Map<String, String> manifest = new HashMap<>();
@@ -44,10 +47,6 @@ public final class ManifestUtil {
       log.warn("Manifest cannot be read: ", ex);
       loaded = false;
     }
-  }
-
-  private ManifestUtil() {
-    // Nothing to do
   }
 
   /**
