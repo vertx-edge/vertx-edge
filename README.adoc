@@ -1,5 +1,3 @@
-= Vert.x Commons Framework
+= # Vert.x Edge
 
 image:https://img.shields.io/badge/vert.x-4.0.0-purple.svg[link="https://vertx.io"]
-
-Essa biblioteca foi criada com o intuito de agilizar e padronizar as aplicações em Vert.x

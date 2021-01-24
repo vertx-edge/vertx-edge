@@ -36,8 +36,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public final class DeployerVerticle extends AbstractVerticle {
 
-  private static final String VERTICLE_WEB_CLIENT = "com.vertx.commons.web.client.verticle.WebClientVerticle";
-  private static final String VERTICLE_WEB_SERVER = "com.vertx.commons.web.server.verticle.WebServerVerticle";
+  private static final String VERTICLE_WEB_CLIENT = "com.vertx.edge.web.client.verticle.WebClientVerticle";
+  private static final String VERTICLE_WEB_SERVER = "com.vertx.edge.web.server.verticle.WebServerVerticle";
   private Deployer deployer;
 
   @Override
@@ -48,11 +48,10 @@ public final class DeployerVerticle extends AbstractVerticle {
 
     StartInfo.print();
 
+    this.deployer = new Deployer(vertx);
     VerticleConfiguration.create(vertx).load().onFailure(startPromise::fail).onSuccess(config -> {
       String registryPackages = config.getString("registryPackages");
       RegisterCodec.registerAll(vertx, registryPackages);
-
-      this.deployer = new Deployer(vertx);
 
       startDepoy(timer, config, registryPackages).onSuccess(p -> {
         log.info("All Verticles are deployed successful");
