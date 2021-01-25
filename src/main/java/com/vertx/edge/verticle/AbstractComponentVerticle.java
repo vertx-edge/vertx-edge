@@ -23,7 +23,6 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -33,48 +32,12 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
 
   private static final long TIMEOUT_VERTICLE_UP = 30000L;
 
-  public Promise<Void> initialize() {
-    Promise<Void> startPromise = Promise.promise();
-
-    vertx.eventBus().<JsonObject>localConsumer("configuration.store",
-        message -> this.updateLocalConfig(message.body()));
-
-    this.invokeAllComponents().onComplete(startPromise);
-    return startPromise;
+  @Override
+  public final void start(Promise<Void> startPromise) {
+    this.invokeAllComponents().compose(v -> this.startBaseVerticle()).onComplete(startPromise);
   }
-
-  /**
-   * Every time config as change this method is notified.
-   * 
-   * @param config as json
-   */
-  protected void updateLocalConfig(JsonObject json) {
-    JsonArray phases = json.getJsonObject("strategy").getJsonArray("phases");
-
-    for (int i = 0; i < phases.size(); i++) {
-      JsonObject phase = phases.getJsonObject(i);
-      if (phase.containsKey(this.getClass().getName())) {
-        JsonObject deploy = phase.getJsonObject(this.getClass().getName());
-
-        if (deploy != null && deploy.containsKey("config")) {
-          JsonObject config = deploy.getJsonObject("config", new JsonObject());
-          this.config().mergeIn(config);
-
-          this.onConfigChange(phase);
-        }
-        break;
-      }
-    }
-  }
-
-  /**
-   * Handler to on config change.
-   * 
-   * @param phase
-   */
-  protected void onConfigChange(JsonObject phase) {
-    // Nothing to do
-  }
+  
+  protected abstract Future<Void> startBaseVerticle();
 
   /**
    * Get all the components of a class and superClasses
@@ -106,7 +69,7 @@ public abstract class AbstractComponentVerticle extends AbstractVerticle {
     if (clazz.getAnnotatedInterfaces() != null) {
       Arrays.stream(clazz.getAnnotatedInterfaces()).forEach(type -> {
         ComponentRegister component = ComponentRegister.getByClass((Class<?>) type.getType());
-        if(component != null) {
+        if (component != null) {
           annotations.add(component);
         }
       });

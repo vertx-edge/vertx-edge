@@ -21,9 +21,7 @@ import lombok.experimental.Accessors;
 public enum ComponentRegister {
 
   TCP_SERVER(TCPServer.class, "startTcpServer"), 
-  TCP_CLIENT(TCPClient.class, "startTcpClient"),
-  LIVENESS(LivenessCheckable.class, "startLivenessCheck"), 
-  READINESS(ReadinessCheckable.class, "startReadinessCheck");
+  TCP_CLIENT(TCPClient.class, "startTcpClient");
 
   @Getter
   private Class<?> clazz;

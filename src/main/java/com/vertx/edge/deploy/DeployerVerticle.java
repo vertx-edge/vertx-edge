@@ -56,7 +56,7 @@ public final class DeployerVerticle extends AbstractVerticle {
       String registryPackages = config.getString("registryPackages");
       RegisterCodec.registerAll(vertx, registryPackages);
 
-      startDepoy(timer, config, registryPackages).onSuccess(p -> {
+      startDepoy(config, registryPackages).onSuccess(p -> {
         log.info("All Verticles are deployed successful");
         log.info("Elapsed time to deploy: {}", timer);
         log.info("Application started!");
@@ -71,7 +71,7 @@ public final class DeployerVerticle extends AbstractVerticle {
     return null;
   }
 
-  private Future<CompositeFuture> startDepoy(Timer timer, JsonObject config, String registryPackages) {
+  private Future<CompositeFuture> startDepoy(JsonObject config, String registryPackages) {
     Promise<CompositeFuture> promise = Promise.promise();
 
     JsonObject services = config.getJsonObject("services");
@@ -93,7 +93,8 @@ public final class DeployerVerticle extends AbstractVerticle {
       return Future.succeededFuture();
     }
 
-    JsonObject options = new JsonObject().put(CONFIG, config).put("base-package", registryPackages);
+    JsonObject options = new JsonObject().put(CONFIG, new JsonObject().put("services", config)).put("base-package",
+        registryPackages);
     return this.deployer.deploy(ServiceDiscoveryVerticle.class.getName(), options);
   }
 
@@ -110,6 +111,7 @@ public final class DeployerVerticle extends AbstractVerticle {
       return this.deployer.deploy(Class.forName(VERTICLE_WEB_SERVER).getName(),
           options.put(CONFIG, config.put("base-package", registryPackages)));
     } catch (ClassNotFoundException e) {
+      log.trace(e);
       return Future.failedFuture("In the configuration file the WebServer field was found, but the package is missing. "
           + "Import the library -> groupId: com.vertx.edge | artifactId: web-server");
     }
@@ -127,6 +129,7 @@ public final class DeployerVerticle extends AbstractVerticle {
     try {
       return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(), options.put(CONFIG, config));
     } catch (ClassNotFoundException e) {
+      log.trace(e);
       return Future.failedFuture("In the configuration file the WebClient field was found, but the package is missing. "
           + "Import the library -> groupId: com.vertx.edge | artifactId: web-client");
     }

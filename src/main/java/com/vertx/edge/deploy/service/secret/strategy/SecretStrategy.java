@@ -12,7 +12,9 @@
 package com.vertx.edge.deploy.service.secret.strategy;
 
 import java.security.GeneralSecurityException;
+import java.util.Objects;
 
+import com.vertx.edge.deploy.service.secret.Secret;
 import com.vertx.edge.utils.Crypto;
 import com.vertx.edge.utils.FileUtils;
 
@@ -21,44 +23,42 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 /**
  * @author Luiz Schmidt
  */
 @Log4j2
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SecretStrategy {
 
   private static final int AES_LENGHT = 16;
-  private static final String USER = "user";
-  private static final String PASSWORD = "password";
 
-  private SecretStrategy() {
-    // Nothing to do
-  }
+  public static Future<JsonObject> resolveSecret(Vertx vertx, JsonObject secretFile) {
+    Objects.requireNonNull(secretFile, "'secret-file' must be a json object.");
 
-  public static Future<JsonObject> resolveSecret(Vertx vertx, JsonObject config) {
-    JsonObject secretFile = config.getJsonObject("secret-file");
-
-    String userPath = secretFile.getString(USER);
-    String passPath = secretFile.getString(PASSWORD);
-    JsonObject cryptoConfig = config.getJsonObject("crypto");
+    String userPath = secretFile.getString(Secret.USERNAME_LITERAL);
+    String passPath = secretFile.getString(Secret.PASSWORD_LITERAL);
+    JsonObject cryptoConfig = secretFile.getJsonObject("crypto");
 
     Promise<JsonObject> promise = Promise.promise();
     if (userPath == null || userPath.isEmpty()) {
-      promise.fail("PATH username cannot be null");
+      promise.fail("PATH '" + Secret.USERNAME_LITERAL + "' cannot be null");
     } else if (passPath == null || passPath.isEmpty()) {
-      promise.fail("PATH password cannot be null");
+      promise.fail("PATH '" + Secret.PASSWORD_LITERAL + "' cannot be null");
     } else {
       Future<String> loadUser = FileUtils.loadFileToString(vertx, userPath);
       Future<String> loadPass = FileUtils.loadFileToString(vertx, passPath);
 
       CompositeFuture.all(loadUser, loadPass).onSuccess(result -> {
         if (cryptoConfig != null) {
-          getKey(vertx, cryptoConfig)
-              .onSuccess(key -> decrypt(key, loadUser.result(), loadPass.result()).onComplete(promise));
+          getKey(vertx, cryptoConfig).compose(key -> decrypt(key, loadUser.result(), loadPass.result()))
+              .onComplete(promise);
         } else {
-          promise.complete(new JsonObject().put("username", loadUser.result()).put(PASSWORD, loadPass.result()));
+          promise.complete(new JsonObject().put(Secret.USERNAME_LITERAL, loadUser.result()).put(Secret.PASSWORD_LITERAL,
+              loadPass.result()));
         }
       }).onFailure(promise::fail);
     }
@@ -71,7 +71,7 @@ public final class SecretStrategy {
       Crypto crypto = new Crypto(key, AES_LENGHT, "AES");
       String user = crypto.decrypt(userEncrypt);
       String pass = crypto.decrypt(passEncrypt);
-      promise.complete(new JsonObject().put("username", user).put(PASSWORD, pass));
+      promise.complete(new JsonObject().put(Secret.USERNAME_LITERAL, user).put(Secret.PASSWORD_LITERAL, pass));
     } catch (GeneralSecurityException e) {
       log.error("Cannot decrypt username or password, reason:", e);
       promise.fail("Cannot decrypt username or password, reason: " + e.getMessage());

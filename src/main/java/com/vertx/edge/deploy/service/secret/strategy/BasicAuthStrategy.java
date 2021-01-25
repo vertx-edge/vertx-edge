@@ -11,20 +11,21 @@
  */
 package com.vertx.edge.deploy.service.secret.strategy;
 
+import java.util.Objects;
+
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Luiz Schmidt
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BasicAuthStrategy {
 
-  private BasicAuthStrategy() {
-    // Nothing to do
-  }
-
-  public static Future<JsonObject> resolveSecret(JsonObject config) {
-    JsonObject basicAuth = config.getJsonObject("basic-auth");
+  public static Future<JsonObject> resolveSecret(JsonObject basicAuth) {
+    Objects.requireNonNull(basicAuth, "'basic-auth' must be a json object.");
 
     String username = basicAuth.getString("username");
     String password = basicAuth.getString("password");

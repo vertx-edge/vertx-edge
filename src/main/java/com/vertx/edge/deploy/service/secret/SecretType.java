@@ -25,13 +25,13 @@ public enum SecretType {
   BASIC_AUTH {
     @Override
     public Future<JsonObject> getUserAndPassword(Vertx vertx, JsonObject config) {
-      return BasicAuthStrategy.resolveSecret(config);
+      return BasicAuthStrategy.resolveSecret(config.getJsonObject("basic-auth"));
     }
   },
   SECRET_FILE {
     @Override
     public Future<JsonObject> getUserAndPassword(Vertx vertx, JsonObject config) {
-      return SecretStrategy.resolveSecret(vertx, config);
+      return SecretStrategy.resolveSecret(vertx, config.getJsonObject("secret-file"));
     }
   },
   NO_AUTH {

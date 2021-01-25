@@ -70,7 +70,8 @@ class TimerTest {
         timer.end();
         long secondTime = timer.getTimeMillis();
         context.verify(() -> {
-          assertTrue(secondTime > 1000 && secondTime < 2000, "is smaller than first and second timer;");
+          System.out.println(secondTime);
+          assertTrue(secondTime >= 1000 && secondTime < 2000, "is smaller than first and second timer;");
           assertNotNull(timer.toString(), "Print timer must not be null");
         });
         context.completeNow();

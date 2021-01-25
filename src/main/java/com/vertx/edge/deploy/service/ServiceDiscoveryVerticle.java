@@ -18,7 +18,6 @@ import com.vertx.edge.verticle.BaseVerticle;
 
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.Record;
 import lombok.extern.log4j.Log4j2;
@@ -33,28 +32,25 @@ public class ServiceDiscoveryVerticle extends BaseVerticle {
 
   @Override
   protected void up(Promise<Void> promise) {
+    JsonObject services = config().getJsonObject("services");
     this.serviceFactory = new ServiceProviderFactory(config().getString("base-package"));
-    this.registerServices().onComplete(promise);
+    this.registerServices(services).onComplete(promise);
   }
 
-  private Future<Void> registerServices() {
+  private Future<Void> registerServices(JsonObject services) {
     CompositeFutureBuilder composite = CompositeFutureBuilder.create();
-    for (String key : config().fieldNames()) {
-      composite
-          .add(registerService(vertx, config().getJsonObject(key.toLowerCase(Locale.ENGLISH), new JsonObject()), key)
-              .future());
+    for (String key : services.fieldNames()) {
+      String serviceName = key.toLowerCase(Locale.ENGLISH);
+      JsonObject serviceConfig = services.getJsonObject(key, new JsonObject());
+      composite.add(registerService(serviceName, serviceConfig).future());
     }
 
     return composite.all();
   }
 
-  private Promise<Void> registerService(Vertx vertx, JsonObject serviceConfig, String key) {
+  private Promise<Void> registerService(String key, JsonObject serviceConfig) {
     Promise<Void> promise = Promise.promise();
-
-    serviceFactory.newInstance(vertx, key, serviceConfig)
-      .onSuccess(record -> publish(key, record).onComplete(promise))
-      .onFailure(cause -> promise.fail("Error on creating instance of service '" + key + "' -> reason: " + cause));
-
+    serviceFactory.newInstance(vertx, key, serviceConfig).compose(record -> publish(key, record)).onComplete(promise);
     return promise;
   }
 

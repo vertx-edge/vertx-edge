@@ -11,19 +11,25 @@
  */
 package com.vertx.edge.deploy.service.secret;
 
+import java.util.Objects;
+
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Luiz Schmidt
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Secret {
 
-  private Secret() {
-    // Nothing to do
-  }
+  public static final String PASSWORD_LITERAL = "password";
+  public static final String USERNAME_LITERAL = "username";
+  private static final String SECRET_NOT_FOUND = "Please enter the database authentication type. "
+      + "(eg. secret-file, basic-auth, no-auth)";
 
   /**
    * Return an JsonObject with username and password
@@ -33,15 +39,17 @@ public final class Secret {
    * @return
    */
   public static Future<JsonObject> getUsernameAndPassword(Vertx vertx, JsonObject config) {
+    Objects.requireNonNull(config, "Secret json config is null.");
     SecretType type = chooseType(config);
 
     if (type == null) {
-      return Future
-          .failedFuture("Please enter the database authentication type. (eg. secret-file, basic-auth, no-auth)");
+      return Future.failedFuture(SECRET_NOT_FOUND);
     }
 
+    JsonObject configuration = config.copy();
+    clear(config);
     Promise<JsonObject> promise = Promise.promise();
-    type.getUserAndPassword(vertx, config).onSuccess(secret -> promise.complete(buildJsonAuthFile(secret)))
+    type.getUserAndPassword(vertx, configuration).onSuccess(secret -> promise.complete(buildJsonAuthFile(secret)))
         .onFailure(promise::fail);
     return promise.future();
   }
@@ -59,13 +67,14 @@ public final class Secret {
   }
 
   private static JsonObject buildJsonAuthFile(JsonObject secret) {
-    return new JsonObject().put("user", secret.getString("user")).put("pass", secret.getString("pass"));
+    return new JsonObject().put(USERNAME_LITERAL, secret.getString(USERNAME_LITERAL)).put(PASSWORD_LITERAL,
+        secret.getString(PASSWORD_LITERAL));
   }
 
-  public static void clear(JsonObject config) {
+  private static void clear(JsonObject config) {
     config.remove("user");
     config.remove("pass");
-    config.remove("username");
-    config.remove("password");
+    config.remove(USERNAME_LITERAL);
+    config.remove(PASSWORD_LITERAL);
   }
 }
