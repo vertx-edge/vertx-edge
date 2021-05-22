@@ -29,26 +29,28 @@ public abstract class BaseVerticle extends AbstractComponentVerticle {
     promise.complete();
   }
 
-  protected void up() {}
+  protected void up() {
+  }
 
   @Override
   public final Future<Void> startBaseVerticle() {
     discovery = ServiceDiscovery.create(vertx);
     Promise<Void> promise = Promise.promise();
     vertx.eventBus().<JsonObject>consumer("configuration.store", this::updateLocalConfig);
-    
+
     up();
     up(promise);
     return promise.future();
   }
-  
+
   /**
    * Handler to on config change.
    * 
    * @param phaseConfig
    */
-  protected void onConfigChange(JsonObject phaseConfig) {}
-  
+  protected void onConfigChange(JsonObject phaseConfig) {
+  }
+
   /**
    * Every time config as change this method is notified.
    * 
@@ -58,18 +60,20 @@ public abstract class BaseVerticle extends AbstractComponentVerticle {
     JsonObject json = message.body();
     JsonArray phases = json.getJsonObject("strategy").getJsonArray("phases");
 
-    for (int i = 0; i < phases.size(); i++) {
-      JsonObject phase = phases.getJsonObject(i);
-      if (phase.containsKey(this.getClass().getName())) {
-        JsonObject deploy = phase.getJsonObject(this.getClass().getName());
+    if (phases != null) {
+      for (int i = 0; i < phases.size(); i++) {
+        JsonObject phase = phases.getJsonObject(i);
+        if (phase.containsKey(this.getClass().getName())) {
+          JsonObject deploy = phase.getJsonObject(this.getClass().getName());
 
-        if (deploy != null && deploy.containsKey("config")) {
-          JsonObject config = deploy.getJsonObject("config", new JsonObject());
-          this.config().mergeIn(config);
+          if (deploy != null && deploy.containsKey("config")) {
+            JsonObject config = deploy.getJsonObject("config", new JsonObject());
+            this.config().mergeIn(config);
 
-          this.onConfigChange(phase);
+            this.onConfigChange(phase);
+          }
+          break;
         }
-        break;
       }
     }
   }

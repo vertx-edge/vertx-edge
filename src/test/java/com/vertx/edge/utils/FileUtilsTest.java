@@ -31,7 +31,7 @@ class FileUtilsTest {
   void testShouldReadAFile(Vertx vertx, VertxTestContext context) {
     FileUtils.loadFileToString(vertx, "file.txt").onComplete(context.succeeding(file -> {
       context.verify(() -> {
-        assertEquals("Hello Foo!\nBar?", file, "content of file must be equals");
+        assertEquals("Hello Foo! Bar?", file, "content of file must be equals");
       });
       context.completeNow();
     }));

@@ -12,6 +12,7 @@
 package com.vertx.edge.utils;
 
 import java.util.Map;
+import java.util.Objects;
 
 import io.vertx.core.json.JsonObject;
 import lombok.AccessLevel;
@@ -34,6 +35,8 @@ public final class JsonObjectUtils {
   }
 
   private static JsonObject transformFlat(JsonObject json, String father) {
+    Objects.requireNonNull(json, "To transform flatJson JSON cannot be null");
+    
     JsonObject flatNode = new JsonObject();
     json.getMap().forEach((key, value) -> {
       if (father != null) {

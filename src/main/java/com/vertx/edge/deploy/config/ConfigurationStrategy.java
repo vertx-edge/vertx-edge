@@ -12,7 +12,6 @@
 package com.vertx.edge.deploy.config;
 
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -20,15 +19,10 @@ import io.vertx.core.json.JsonObject;
  * @author Luiz Schmidt
  *
  */
-public interface VerticleConfiguration {
+public interface ConfigurationStrategy {
 
-  String ENV_CONFIG_PARAM = "DEPLOY_CONFIG";
-  String CONFIG_NAME = "deploy-strategy.yaml";
   String BASE_PACKAGE_EDGE = "com.vertx.edge";
-
-  static VerticleConfiguration create(Vertx vertx) {
-    return new VerticleConfigurationImpl(vertx);
-  }
-
+  
   Future<JsonObject> load();
+
 }

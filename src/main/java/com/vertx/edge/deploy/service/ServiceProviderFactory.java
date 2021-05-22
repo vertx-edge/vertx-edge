@@ -17,7 +17,7 @@ import java.util.Set;
 import org.reflections.Reflections;
 
 import com.vertx.edge.annotations.ServiceProvider;
-import com.vertx.edge.deploy.config.VerticleConfiguration;
+import com.vertx.edge.deploy.config.ConfigurationStrategy;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -35,7 +35,7 @@ public class ServiceProviderFactory {
   private Set<Class<?>> list = new HashSet<>();
 
   public ServiceProviderFactory(String basePackage) {
-    Reflections reflections = new Reflections(VerticleConfiguration.BASE_PACKAGE_EDGE, basePackage);
+    Reflections reflections = new Reflections(ConfigurationStrategy.BASE_PACKAGE_EDGE, basePackage);
     Set<Class<?>> annotations = reflections.getTypesAnnotatedWith(ServiceProvider.class);
 
     for (Class<?> clazz : annotations)

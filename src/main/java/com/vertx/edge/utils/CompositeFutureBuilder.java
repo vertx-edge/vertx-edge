@@ -34,12 +34,24 @@ public class CompositeFutureBuilder {
   }
 
   public <T> CompositeFutureBuilder add(Promise<T> promise) {
-    futures.add(promise.future());
+    this.add(promise.future());
     return this;
   }
   
   public <T> CompositeFutureBuilder add(Future<T> future) {
     futures.add(future);
+    return this;
+  }
+  
+  public <T> CompositeFutureBuilder addHandler(Promise<T> promise) {
+    this.addHandler(promise.future());
+    return this;
+  }
+  
+  public <T> CompositeFutureBuilder addHandler(Future<T> future) {
+    Promise<Void> promise = Promise.promise();
+    future.onComplete(v -> promise.complete());
+    futures.add(promise.future());
     return this;
   }
 

@@ -27,10 +27,12 @@ import lombok.extern.log4j.Log4j2;
  *
  */
 @Log4j2
-public class VerticleConfigurationImpl implements VerticleConfiguration {
+public class PeriodicConfigurationStrategy implements ConfigurationStrategy {
 
   private static final String EVENT_CONFIG_CHANGE = "configuration.store";
-
+  private static final String ENV_CONFIG_PARAM = "DEPLOY_CONFIG";
+  private static final String CONFIG_NAME = "deploy-strategy.yaml";
+  
   private static final String MESSAGE_FILE_NOT_FOUND = "Missing deploy strategy. You can set by environment variable "
       + ENV_CONFIG_PARAM + " or create file: \"src/main/resources/" + CONFIG_NAME + "\"";
 
@@ -39,7 +41,11 @@ public class VerticleConfigurationImpl implements VerticleConfiguration {
 
   private AtomicLong version = new AtomicLong();
 
-  public VerticleConfigurationImpl(Vertx vertx) {
+  public static ConfigurationStrategy create(Vertx vertx) {
+    return new PeriodicConfigurationStrategy(vertx);
+  }
+  
+  private PeriodicConfigurationStrategy(Vertx vertx) {
     this.vertx = vertx;
     this.fileName = loadFileName();
   }
@@ -74,9 +80,9 @@ public class VerticleConfigurationImpl implements VerticleConfiguration {
 
   /**
    * Read environment searching for
-   * {@value VerticleConfiguration#ENV_CONFIG_PARAM} variable
+   * {@value ConfigurationStrategy#ENV_CONFIG_PARAM} variable
    * 
-   * @return file name or default {@value VerticleConfiguration#CONFIG_NAME}
+   * @return file name or default {@value ConfigurationStrategy#CONFIG_NAME}
    */
   private static String loadFileName() {
     String deployConfig = System.getProperty(ENV_CONFIG_PARAM, null);
