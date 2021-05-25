@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.vertx.edge.components.ComponentRegister;
+import com.vertx.edge.deploy.injection.Injection;
 import com.vertx.edge.utils.CompositeFutureBuilder;
 
 import io.vertx.core.AbstractVerticle;
@@ -24,6 +25,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.servicediscovery.ServiceDiscovery;
 
 /**
  * @author Luiz Schmidt
@@ -31,12 +33,15 @@ import io.vertx.core.json.JsonObject;
 public abstract class AbstractComponentVerticle extends AbstractVerticle {
 
   private static final long TIMEOUT_VERTICLE_UP = 30000L;
+  protected ServiceDiscovery discovery;
 
   @Override
   public final void start(Promise<Void> startPromise) {
-    this.invokeAllComponents().compose(v -> this.startBaseVerticle()).onComplete(startPromise);
+    discovery = ServiceDiscovery.create(vertx);
+    Injection.create(vertx, this).inject().compose(v -> this.invokeAllComponents())
+        .compose(v -> this.startBaseVerticle()).onComplete(startPromise);
   }
-  
+
   protected abstract Future<Void> startBaseVerticle();
 
   /**

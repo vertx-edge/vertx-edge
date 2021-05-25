@@ -16,14 +16,11 @@ import io.vertx.core.Promise;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.servicediscovery.ServiceDiscovery;
 
 /**
  * @author Luiz Schmidt
  */
 public abstract class BaseVerticle extends AbstractComponentVerticle {
-
-  protected ServiceDiscovery discovery;
 
   protected void up(Promise<Void> promise) {
     promise.complete();
@@ -34,7 +31,6 @@ public abstract class BaseVerticle extends AbstractComponentVerticle {
 
   @Override
   public final Future<Void> startBaseVerticle() {
-    discovery = ServiceDiscovery.create(vertx);
     Promise<Void> promise = Promise.promise();
     vertx.eventBus().<JsonObject>consumer("configuration.store", this::updateLocalConfig);
 

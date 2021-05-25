@@ -17,17 +17,15 @@ import java.util.List;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import lombok.NoArgsConstructor;
 
 /**
  * @author Luiz Schmidt
  */
+@NoArgsConstructor
 public class CompositeFutureBuilder {
 
-  private List<Future<?>> futures;
-
-  public CompositeFutureBuilder() {
-    futures = new ArrayList<>();
-  }
+  private List<Future<?>> futures = new ArrayList<>();
 
   public static CompositeFutureBuilder create() {
     return new CompositeFutureBuilder();

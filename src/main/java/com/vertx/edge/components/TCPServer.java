@@ -60,15 +60,14 @@ public interface TCPServer {
     vertx.createNetServer(options).connectHandler(sock -> {
       Pump.pump(sock, sock).start();
       sock.handler(parser::handle);
-    }).listen(port, res -> {
-      if (res.succeeded()) {
-        log.info("TCPServer opened for: " + port);
-        promise.complete();
-      } else {
-        log.error("Error opening TCPServer on port " + port + ", reason: ", res.cause());
-        promise.fail(res.cause());
-      }
+    }).listen(port).onSuccess(res -> {
+      log.info("TCPServer opened for: "+ port);
+      promise.complete();
+    }).onFailure(cause -> {
+      log.error("Error opening TCPServer on port " + port + ", reason: ", cause);
+      promise.fail(cause);
     });
+
   }
 
   default RecordParser chooseParser(JsonObject config) {

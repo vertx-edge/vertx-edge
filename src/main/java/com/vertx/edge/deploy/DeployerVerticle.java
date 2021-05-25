@@ -147,7 +147,7 @@ public final class DeployerVerticle extends AbstractVerticle {
    */
   private Future<Void> deployWebServer(JsonObject config, String registryPackages) {
     if (config == null) {
-      log.info("The configuration \"web-server\" was not found, no one @Controller will inject.");
+      log.info("The configuration \"web-server\" was not found, no one @Operation will inject.");
       return Future.succeededFuture();
     }
 

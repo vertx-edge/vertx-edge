@@ -15,7 +15,9 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.servicediscovery.Record;
 import io.vertx.servicediscovery.ServiceDiscovery;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public final class Injection {
 
   private ServiceDiscovery discovery;
@@ -44,11 +46,10 @@ public final class Injection {
     CompositeFutureBuilder composite = CompositeFutureBuilder.create();
     listFields.forEach(field -> {
       String name = ServiceInjectionVerticle.SERVICE_FACTORY + field.getType().getName();
-
-      Promise<Void> promise = Promise.promise();
-      discovery.getRecord(new JsonObject().put("name", name)).compose(record -> this.getReference(field, record))
-          .onComplete(promise);
-      composite.add(promise);
+      composite.add(
+          discovery.getRecord(new JsonObject().put("name", name)).compose(record -> this.getReference(field, record))
+              .onFailure(cause -> log.error("Error when injecting service " + field.getType().getName() + " into the class "
+                  + instance.getClass().getName() + ", cause: " + cause.getMessage())));
     });
     return composite.all();
   }
