@@ -23,7 +23,6 @@ import com.vertx.edge.verticle.ServiceInjectionVerticle;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -40,7 +39,6 @@ public final class DeployerVerticle extends AbstractVerticle {
   public static final String BASE_PACKAGE = "registryPackages";
   private static final String DIR_BANNER = "banner.txt";
   private static final String CONFIG = "config";
-  private static final String DEPLOY_OPTIONS = "deployOptions";
   private static final String VERTICLE_WEB_CLIENT = "com.vertx.edge.web.client.verticle.WebClientVerticle";
   private static final String VERTICLE_WEB_SERVER = "com.vertx.edge.web.server.verticle.WebServerVerticle";
   private Deployer deployer;
@@ -54,17 +52,17 @@ public final class DeployerVerticle extends AbstractVerticle {
     StartInfo.print(this.bannerFile());
 
     this.deployer = new Deployer(vertx);
-    PeriodicConfigurationStrategy.create(vertx).load().onFailure(startPromise::fail).onSuccess(config -> {
+    PeriodicConfigurationStrategy.create(vertx).load().compose(config -> {
       String registryPackages = config.getString(BASE_PACKAGE);
       RegisterCodec.registerAll(vertx, registryPackages);
 
-      startDepoy(config, registryPackages).onSuccess(p -> {
+      return startDepoy(config, registryPackages).onSuccess(p -> {
         log.info("All Verticles are deployed successful");
         log.info("Elapsed time to deploy: {}", timer);
         log.info("Application started!");
         Thread.currentThread().setName(threadName);
-      }).onFailure(startPromise::fail);
-    });
+      });
+    }).onSuccess(startPromise::complete).onFailure(startPromise::fail);
   }
 
   /**
@@ -83,80 +81,70 @@ public final class DeployerVerticle extends AbstractVerticle {
    * @param registryPackages
    * @return
    */
-  private Future<CompositeFuture> startDepoy(JsonObject config, String registryPackages) {
-    Promise<CompositeFuture> promise = Promise.promise();
-
+  private Future<Void> startDepoy(JsonObject configOriginal, String registryPackages) {
+    JsonObject config = configOriginal.copy();
     JsonObject services = config.getJsonObject("services");
     JsonArray phases = config.getJsonArray("phases");
     JsonObject webServer = config.getJsonObject("web-server");
     JsonObject webClients = config.getJsonObject("web-client");
     JsonObject injections = config.getJsonObject("injections");
 
-    CompositeFutureBuilder.create()
+    return CompositeFutureBuilder.create()
       .add(this.deployServices(services, registryPackages))
       .add(this.deployWebClient(webClients))
       .all()
         .compose(v -> this.deployInjectedService(injections, registryPackages))
         .compose(v -> CompositeFutureBuilder.create()
           .add(this.deployWebServer(webServer, registryPackages))
-          .add(this.deployPhases(phases)).all()
-            .onSuccess(cr -> promise.complete())
-            .onFailure(promise::fail));
-
-    return promise.future();
+          .add(this.deployPhases(phases)).all());
   }
 
   /**
    * Deploy Verticle ServiceInjectionVerticle
-   * @param config
+   * @param injections
    * @param registryPackages
    * @return
    */
-  private Future<Void> deployInjectedService(JsonObject config, String registryPackages) {
-    if (config == null) {
-      config = new JsonObject();
+  private Future<Void> deployInjectedService(JsonObject injections, String registryPackages) {
+    if (injections == null) {
+      injections = new JsonObject();
     }
 
-    JsonObject options = new JsonObject().put(CONFIG, new JsonObject().put("injections", config).put(BASE_PACKAGE,
-        registryPackages));
-    return this.deployer.deploy(ServiceInjectionVerticle.class.getName(), options);
+    return this.deployer.deploy(ServiceInjectionVerticle.class.getName(), 
+        new JsonObject().put(CONFIG, injections.copy().put(BASE_PACKAGE, registryPackages)));
   }
 
   /**
    * Deploy Verticle ServiceDiscoveryVerticle
-   * @param config
+   * @param services
    * @param registryPackages
    * @return
    */
-  private Future<Void> deployServices(JsonObject config, String registryPackages) {
-    if (config == null) {
-      log.info("The configuration \"services\" was not found, no one service will be discovered.");
+  private Future<Void> deployServices(JsonObject services, String registryPackages) {
+    if (services == null) {
+      log.debug("The configuration \"services\" was not found, no one service will be discovered.");
       return Future.succeededFuture();
     }
 
-    JsonObject options = new JsonObject().put(CONFIG, new JsonObject().put("services", config).put(BASE_PACKAGE,
-        registryPackages));
-    return this.deployer.deploy(ServiceDiscoveryVerticle.class.getName(), options);
+    return this.deployer.deploy(ServiceDiscoveryVerticle.class.getName(),
+        new JsonObject().put(CONFIG, new JsonObject().put("services", services.copy()).put(BASE_PACKAGE, registryPackages)));
   }
 
   /**
    * Deploy Verticle WebServerVerticle
-   * @param config
+   * @param webserver
    * @param registryPackages
    * @return
    */
-  private Future<Void> deployWebServer(JsonObject config, String registryPackages) {
-    if (config == null) {
-      log.info("The configuration \"web-server\" was not found, no one @Operation will inject.");
+  private Future<Void> deployWebServer(JsonObject webserver, String registryPackages) {
+    if (webserver == null) {
+      log.debug("The configuration \"web-server\" was not found, no one @Operation will inject.");
       return Future.succeededFuture();
     }
 
-    JsonObject options = config.getJsonObject(DEPLOY_OPTIONS, new JsonObject());
-    config.remove(DEPLOY_OPTIONS);
-
     try {
       return this.deployer.deploy(Class.forName(VERTICLE_WEB_SERVER).getName(),
-          options.put(CONFIG, config.put(BASE_PACKAGE, registryPackages)));
+          new JsonObject().put(CONFIG, webserver.copy().put(BASE_PACKAGE, registryPackages)));
     } catch (ClassNotFoundException e) {
       log.trace(e);
       return Future.failedFuture("In the configuration file the WebServer field was found, but the package is missing. "
@@ -166,20 +154,18 @@ public final class DeployerVerticle extends AbstractVerticle {
 
   /**
    * Deploy Verticle WebClientVerticle
-   * @param config
+   * @param webclient
    * @return
    */
-  private Future<Void> deployWebClient(JsonObject config) {
-    if (config == null) {
-      log.info("The configuration \"web-client\" was not found, no one WebClient will be discovered.");
+  private Future<Void> deployWebClient(JsonObject webclient) {
+    if (webclient == null) {
+      log.debug("The configuration \"web-client\" was not found, no one WebClient will be discovered.");
       return Future.succeededFuture();
     }
 
-    JsonObject options = config.getJsonObject(DEPLOY_OPTIONS, new JsonObject());
-    config.remove(DEPLOY_OPTIONS);
-
     try {
-      return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(), options.put(CONFIG, config));
+      return this.deployer.deploy(Class.forName(VERTICLE_WEB_CLIENT).getName(),
+          new JsonObject().put(CONFIG, webclient.copy()));
     } catch (ClassNotFoundException e) {
       log.trace(e);
       return Future.failedFuture("In the configuration file the WebClient field was found, but the package is missing. "
@@ -194,12 +180,12 @@ public final class DeployerVerticle extends AbstractVerticle {
    */
   private Future<Void> deployPhases(JsonArray config) {
     if (config == null || config.isEmpty()) {
-      log.info("The configuration \"phases\" was not found, no one personalized verticle will be up.");
+      log.debug("The configuration \"phases\" was not found, no one personalized verticle will be up.");
       return Future.succeededFuture();
     }
 
     Promise<Void> promise = Promise.promise();
-    LinkedList<Phase> phases = config.stream().map(JsonObject.class::cast).map(Phase::new)
+    LinkedList<Phase> phases = config.copy().stream().map(JsonObject.class::cast).map(Phase::new)
         .collect(Collectors.toCollection(LinkedList::new));
 
     Iterator<Phase> it = phases.iterator();
@@ -209,9 +195,11 @@ public final class DeployerVerticle extends AbstractVerticle {
 
   /**
    * Deploy each phase
+   * 
    * @param it
    * @param handler
    */
+  //TODO mudar para promise
   private void deployPhase(Iterator<Phase> it, Handler<AsyncResult<Void>> handler) {
     if (it.hasNext()) {
       it.next().deploy(vertx).onSuccess(v -> deployPhase(it, handler))

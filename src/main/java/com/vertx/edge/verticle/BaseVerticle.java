@@ -34,8 +34,12 @@ public abstract class BaseVerticle extends AbstractComponentVerticle {
     Promise<Void> promise = Promise.promise();
     vertx.eventBus().<JsonObject>consumer("configuration.store", this::updateLocalConfig);
 
-    up();
-    up(promise);
+    try {
+      up();
+      up(promise);
+    }catch(RuntimeException e) {
+      promise.fail(e);
+    }
     return promise.future();
   }
 
@@ -56,21 +60,14 @@ public abstract class BaseVerticle extends AbstractComponentVerticle {
     JsonObject json = message.body();
     JsonArray phases = json.getJsonObject("strategy").getJsonArray("phases");
 
-    if (phases != null) {
-      for (int i = 0; i < phases.size(); i++) {
-        JsonObject phase = phases.getJsonObject(i);
-        if (phase.containsKey(this.getClass().getName())) {
-          JsonObject deploy = phase.getJsonObject(this.getClass().getName());
-
-          if (deploy != null && deploy.containsKey("config")) {
-            JsonObject config = deploy.getJsonObject("config", new JsonObject());
-            this.config().mergeIn(config);
-
-            this.onConfigChange(phase);
-          }
-          break;
-        }
-      }
-    }
+    phases.stream().map(JsonObject.class::cast)
+      .filter(p -> p.containsKey(this.getClass().getName()))
+      .map(phase -> phase.getJsonObject(this.getClass().getName()))
+      .filter(p -> p != null && p.containsKey("config"))
+      .forEach(phase -> {
+        JsonObject config = phase.getJsonObject("config", new JsonObject());
+        this.config().mergeIn(config);
+        this.onConfigChange(phase);
+      });
   }
 }

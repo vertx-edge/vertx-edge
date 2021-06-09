@@ -32,9 +32,12 @@ public class ServiceDiscoveryVerticle extends BaseVerticle {
 
   @Override
   protected void up(Promise<Void> promise) {
+    String threadName = Thread.currentThread().getName();
+    Thread.currentThread().setName("service");
     JsonObject services = config().getJsonObject("services");
     this.serviceFactory = new ServiceProviderFactory(config().getString("base-package"));
-    this.registerServices(services).onComplete(promise);
+    this.registerServices(services).onComplete(promise)
+      .onComplete(res -> Thread.currentThread().setName(threadName));
   }
 
   private Future<Void> registerServices(JsonObject services) {
@@ -60,11 +63,10 @@ public class ServiceDiscoveryVerticle extends BaseVerticle {
 
     Promise<Void> promise = Promise.promise();
     promiseRecord.future().onSuccess(published -> {
-      Thread.currentThread().setName("service-registration");
-      log.info("'" + key + "' published");
+      log.info("[service] '" + key + "' published");
       promise.complete();
     }).onFailure(cause -> {
-      log.error("'" + key + "' failed to publish", cause);
+      log.error("[service] '" + key + "' failed to publish", cause);
       promise.fail("Error on publishing instance of service '" + key + "' -> reason: " + cause);
     });
     return promise.future();

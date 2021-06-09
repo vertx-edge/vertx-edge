@@ -44,7 +44,7 @@ public class InjectionTypeImpl implements InjectionType {
     protected Injectable retrieve() {
       String name = record().getName().replace(ServiceInjectionVerticle.SERVICE_FACTORY, "");
       if(!services.containsKey(name)) {
-        services.put(name,  newInstance(name));
+        services.put(name, newInstance(name));
       }
       return services.get(name);
     }

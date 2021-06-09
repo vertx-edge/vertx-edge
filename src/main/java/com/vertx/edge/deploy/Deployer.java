@@ -68,7 +68,7 @@ public class Deployer {
    */
   public Future<Void> deploy(String name, DeploymentOptions options, long timeout) {
     Thread.currentThread().setName("deploy");
-    log.info(String.format("Deploying %s verticle.", printName(name)));
+    log.info(String.format("Deploying %s verticle...", printName(name)));
 
     Promise<String> deployPromise = Promise.promise();
     vertx.deployVerticle(name, options, deployPromise);
@@ -77,12 +77,9 @@ public class Deployer {
 
     Promise<Void> promise = Promise.promise();
     deployPromise.future().onSuccess(id -> {
-      log.info("Success to Deploy Verticle: ".concat(printName(name)));
-      promise.complete();
-    }).onFailure(cause -> {
-      log.error("Failed to Deploy Verticle " + printName(name) + ", reason: " + cause.getMessage(), cause);
-      promise.fail(String.format("Failed to deploy: %s -> Cause: %s", name, cause.getMessage()));
-    });
+      log.info("Successful verticle deployment: ".concat(printName(name)));
+      promise.tryComplete();
+    }).onFailure(cause -> promise.tryFail(String.format("%s -> Cause: %s", name, cause)));
 
     return promise.future();
   }

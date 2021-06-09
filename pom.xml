@@ -10,7 +10,7 @@
   <version>1.0.0</version>
 
   <properties>
-    <vertx.version>4.0.0</vertx.version>
+    <vertx.version>4.0.3</vertx.version>
     <java.version>12</java.version>
   </properties>
 

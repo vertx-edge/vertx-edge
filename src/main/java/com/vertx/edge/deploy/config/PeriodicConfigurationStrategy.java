@@ -27,7 +27,7 @@ import lombok.extern.log4j.Log4j2;
  *
  */
 @Log4j2
-public class PeriodicConfigurationStrategy implements ConfigurationStrategy {
+public final class PeriodicConfigurationStrategy implements ConfigurationStrategy {
 
   private static final String EVENT_CONFIG_CHANGE = "configuration.store";
   private static final String ENV_CONFIG_PARAM = "DEPLOY_CONFIG";
@@ -41,13 +41,13 @@ public class PeriodicConfigurationStrategy implements ConfigurationStrategy {
 
   private AtomicLong version = new AtomicLong();
 
-  public static ConfigurationStrategy create(Vertx vertx) {
-    return new PeriodicConfigurationStrategy(vertx);
-  }
-  
   private PeriodicConfigurationStrategy(Vertx vertx) {
     this.vertx = vertx;
     this.fileName = loadFileName();
+  }
+  
+  public static ConfigurationStrategy create(Vertx vertx) {
+    return new PeriodicConfigurationStrategy(vertx);
   }
 
   @Override
@@ -73,7 +73,10 @@ public class PeriodicConfigurationStrategy implements ConfigurationStrategy {
     Thread.currentThread().setName("configuration");
     log.trace("[Reload configuration] before -> {}", config.getPreviousConfiguration().encodePrettily());
     log.trace("[Reload configuration] after -> {}", config.getNewConfiguration().encodePrettily());
-    log.info("Configuration change... v" + version.incrementAndGet());
+    
+    if(config.getNewConfiguration().hashCode() != config.getPreviousConfiguration().hashCode()) {
+      log.info("Configuration change... v" + version.incrementAndGet());
+    }
     vertx.eventBus().publish(EVENT_CONFIG_CHANGE, config.getNewConfiguration());
     Thread.currentThread().setName(threadName);
   }

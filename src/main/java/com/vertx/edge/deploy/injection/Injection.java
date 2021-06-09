@@ -47,11 +47,12 @@ public final class Injection {
     listFields.forEach(field -> {
       String name = ServiceInjectionVerticle.SERVICE_FACTORY + field.getType().getName();
       composite.add(
-          discovery.getRecord(new JsonObject().put("name", name)).compose(record -> this.getReference(field, record))
-              .onFailure(cause -> log.error("Error when injecting service " + field.getType().getName() + " into the class "
-                  + instance.getClass().getName() + ", cause: " + cause.getMessage())));
+          discovery.getRecord(new JsonObject().put("name", name)).compose(record -> this.getReference(field, record),
+              cause -> Future.failedFuture("Not found record: " + field.getType().getName())));
     });
-    return composite.all();
+    return composite.all()
+        .onFailure(cause -> log.error(String.format("Error when injecting into the class %s, cause: %s",
+            instance.getClass().getName(), cause.getMessage())));
   }
 
   private Future<Void> getReference(Field field, Record record) {
